@@ -89,22 +89,65 @@ Add-ons (extra revenue): lip-sync, voice cloning library, rush processing, API a
 
 ```
 ┌──────────────┐   HTTPS   ┌─────────────────────┐
-│  Frontend    │◀────────▶│   Backend API        │
+│  Frontend    │◀────────▶│   Backend API        │   (light, always-on, cheap host)
 │  Next.js     │           │   FastAPI (Python)   │
 │  upload, UI, │           │   own JWT auth       │
 │  dashboard,  │           │   jobs + billing     │
 │  player      │           └──────┬──────────────┘
-└──────────────┘                  │
+└──────────────┘                  │ enqueue job
         ┌──────────────┬──────────┼───────────────┬───────────────┐
         ▼              ▼          ▼               ▼               ▼
-   PostgreSQL      S3 storage   Worker (GPU)   ElevenLabs API   Stripe
-   users, jobs,    videos +     Demucs +       Scribe + Clone   subscriptions
-   usage, subs     audio        align + mix    + Multilingual   + webhooks
+   PostgreSQL      S3 storage   RunPod          ElevenLabs API   Stripe
+   users, jobs,    videos +     SERVERLESS      Scribe + Clone   subscriptions
+   usage, subs     audio        (GPU WORKER)    + Multilingual   + webhooks
+                                Demucs + align
+                                + mix (+lipsync)
 ```
 
-- **Backend** = FastAPI (Python) — perfect for the audio pipeline + ML libs.
-- **Worker** = a GPU box (RunPod/your server) that runs Demucs + alignment + mixing; calls ElevenLabs for STT/TTS. Jobs queued (Redis/Celery).
 - **Frontend** = Next.js (Vercel).
+- **Backend API** = FastAPI (Python), on a cheap always-on host (Railway/Render). It is LIGHT — it
+  only handles auth, billing, uploads, and **enqueues jobs**. It never does heavy processing.
+- **Worker** = **RunPod Serverless (GPU)** — see section 5.1. Runs Demucs + alignment + mixing +
+  optional lip-sync; calls ElevenLabs for STT/TTS. Autoscales and scales to zero.
+
+## 5.1 The Worker = RunPod Serverless (GPU)
+
+The heavy, GPU work runs as a **RunPod Serverless endpoint** — on-demand GPU workers that autoscale
+and **scale to zero when idle ($0 cost)**.
+
+**What runs on the GPU worker:**
+| Step | GPU? | Where |
+|---|---|---|
+| Demucs (split vocals / BGM+SFX) | ✅ | RunPod Serverless |
+| Lip-sync (LatentSync) — add-on | ✅ | RunPod Serverless |
+| Mixing / ffmpeg / align | CPU | same worker |
+| Scribe STT + Multilingual TTS + clone | ❌ API | ElevenLabs cloud (called from worker) |
+
+**How it works:**
+```
+API enqueues job → RunPod Serverless endpoint receives it → a GPU worker boots (or reuses a warm one)
+   → runs the dubbing pipeline → uploads result to S3 → reports done → API notifies the user
+```
+
+**Why RunPod Serverless:**
+- **Scale to zero** when no jobs → pay nothing idle.
+- **Autoscales** workers up on demand (set max workers = your concurrency cap).
+- **Built-in request queue** — handles bursts of many users.
+- **Pay per second** of processing → cheap while small, scales when you grow.
+- No 24/7 GPU server to manage.
+
+**Setup (one time):**
+- Package the worker as a **Docker image** with a RunPod **handler** (`handler.py` that takes a job
+  `{video_url, target_lang, num_speakers, lipsync}` → returns `{result_url}`).
+- Pre-bake Demucs (+ LatentSync) weights into the image so workers start fast.
+- Deploy as a Serverless endpoint; the API calls it via RunPod's API / queue.
+
+**Cold-start fix:** first job after idle takes ~10–30s (model load). Mitigate with **1 min/active
+worker** (small cost) or **RunPod FlashBoot**. For MVP, a short cold start is fine.
+
+> **MVP shortcut:** without lip-sync, the only GPU step is Demucs — it *can* run on CPU (slower) on
+> a normal background worker, so you can launch before RunPod. Add RunPod Serverless when you add
+> lip-sync or need fast Demucs at scale.
 
 ---
 
@@ -198,7 +241,8 @@ on new job:
 | Auth | own (bcrypt + JWT) |
 | Database | PostgreSQL (Supabase/Neon/RDS) |
 | Storage | AWS S3 (or Cloudflare R2) |
-| Queue/worker | Redis + Celery, worker on RunPod GPU |
+| Queue | Redis (job queue) — or RunPod Serverless' built-in queue |
+| GPU Worker | **RunPod Serverless** (Docker handler) — Demucs + mix + lip-sync, scales to zero |
 | Audio | ffmpeg, Demucs, pydub |
 | Dubbing AI | ElevenLabs (Scribe, IVC, Multilingual v2/v3) |
 | Translate | DeepL or GPT |
