@@ -35,15 +35,10 @@ Thumbs.db
 *.jpeg
 *.gif
 
-# Working folders that fill with big files
-02_keyframes/*.png
-03_clips_raw/
-04_lipsync/
-05_audio/voice/
-05_audio/sfx/
-05_audio/music/
-06_upscaled/
-07_final/
+# Working folders fill with big media — but the *.md/.csv guides inside them
+# must stay tracked, so we rely on the file-EXTENSION ignores above (mp4, wav,
+# png, etc.) instead of ignoring whole folders. Do NOT ignore folders by name
+# here, or git will drop the guide files inside them.
 
 # But DO keep the guide/markdown/csv/yaml in those folders:
 !**/*.md
