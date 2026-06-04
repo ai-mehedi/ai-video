@@ -1,0 +1,50 @@
+# ============================================================================
+#  CHARACTER LoRA TRAINING (ai-toolkit, FLUX) — your reusable "model" (= Soul ID).
+#  Train ONCE on 20-40 photos, reuse in every shot + every film.
+#
+#  USE WHEN you want YOUR OWN face (not the generated test character).
+#  1. git clone https://github.com/ostris/ai-toolkit && cd ai-toolkit && pip install -r requirements.txt
+#  2. put 20-40 photos in  01_character/dataset/
+#  3. edit the 2 PATHS below
+#  4. python run.py /workspace/ai-project/01_character/train_lora.yaml
+#  5. copy output .safetensors -> set CHARACTER_LORA in pipeline/config.py
+# ============================================================================
+---
+job: extension
+config:
+  name: "myhero"
+  process:
+    - type: 'sd_trainer'
+      training_folder: "/workspace/ai-project/01_character/output"   # <<< EDIT
+      device: cuda:0
+      trigger_word: "myhero"
+      network: { type: "lora", linear: 16, linear_alpha: 16 }
+      save: { dtype: float16, save_every: 250, max_step_saves_to_keep: 4 }
+      datasets:
+        - folder_path: "/workspace/ai-project/01_character/dataset"   # <<< EDIT
+          caption_ext: "txt"
+          caption_dropout_rate: 0.05
+          cache_latents_to_disk: true
+          resolution: [ 768, 1024 ]
+      train:
+        batch_size: 1
+        steps: 2500
+        gradient_checkpointing: true
+        noise_scheduler: "flowmatch"
+        optimizer: "adamw8bit"
+        lr: 1e-4
+        ema_config: { use_ema: true, ema_decay: 0.99 }
+        dtype: bf16
+      model: { name_or_path: "black-forest-labs/FLUX.1-dev", is_flux: true, quantize: true }
+      sample:
+        sampler: "flowmatch"
+        sample_every: 250
+        width: 1024
+        height: 1024
+        guidance_scale: 3.0
+        sample_steps: 20
+        seed: 42
+        prompts:
+          - "myhero, cinematic film still, close-up, natural skin texture, soft light"
+          - "myhero, medium shot, standing on a rainy street, moody cinematic lighting"
+meta: { name: "myhero", version: '1.0' }
