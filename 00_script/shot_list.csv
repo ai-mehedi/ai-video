@@ -1,0 +1,11 @@
+shot_id,scene,shot_scale,camera_move,location,time_lighting,character_action,wardrobe,dialogue,duration_sec,emotion,sfx,music,status
+01,intro,wide,slow push-in,city rooftop,night / neon glow,hero stands at the edge looking over city,black coat,,5,calm-tense,wind + distant city,intro theme,todo
+02,intro,close-up,static,city rooftop,night / neon glow,hero turns head slowly to camera,black coat,"It ends tonight.",4,determined,wind,intro theme,todo
+03,intro,medium,slow pan left,city rooftop,night / neon glow,hero pulls collar up walks forward,black coat,,4,cold,footsteps + cloth,intro theme,todo
+04,chase,wide,handheld follow,back alley,night / rain,hero runs through rain,black coat wet,,5,urgent,rain + running steps,tension,todo
+05,chase,close-up,static,back alley,night / rain,hero breathing hard sweat and rain on face,black coat wet,,4,exhausted,heavy breathing + rain,tension,todo
+06,confront,medium,slow push-in,warehouse interior,dim warm light,hero faces the villain,black coat,"You shouldn't have come.",5,threatening,low ambience hum,low drone,todo
+07,confront,extreme close-up,static,warehouse interior,dim warm light,hero's eyes narrow,black coat,,3,intense,silence + heartbeat,low drone,todo
+08,climax,wide,quick push-in,warehouse interior,dim warm light + sparks,hero strikes,black coat,,4,explosive,impact + sparks,climax hit,todo
+09,ending,medium,slow pull-out,city rooftop,dawn / soft orange,hero stands alone as sun rises,black coat,,6,relief,gentle wind + birds,outro theme,todo
+10,ending,close-up,static,city rooftop,dawn / soft orange,hero faint smile looks to horizon,black coat,"Not today.",4,peaceful,gentle wind,outro theme,todo
