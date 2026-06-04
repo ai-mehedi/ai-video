@@ -4,9 +4,13 @@
 #  RUN ON THE POD:   bash setup.sh
 # ============================================================================
 set -e
-echo ">> Installing Python libraries (this takes a few minutes)..."
+echo ">> Installing matching torch + torchvision for CUDA 12.4 (matches most RunPod drivers)..."
+pip install --force-reinstall torch==2.5.1 torchvision==0.20.1 \
+  --index-url https://download.pytorch.org/whl/cu124 \
+  || echo "[warn] torch install failed — if your pod driver differs, pick the matching cuXXX index at pytorch.org"
+
+echo ">> Installing the rest of the libraries..."
 pip install -U \
-  torch \
   "diffusers>=0.32" transformers accelerate sentencepiece protobuf \
   gradio pandas imageio imageio-ffmpeg \
   || echo "[warn] some pip installs failed — check messages above"
