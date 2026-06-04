@@ -1,56 +1,24 @@
-# 🎬 AI Film Studio (open-source, your own)
+# 🎙️ DubStudio — AI Dubbing SaaS
 
-Make realistic short films with a **reusable character**, from **one dashboard**, using free tools.
-Built to test free video quality first — and **swap to a paid video model later** (one config switch)
-only if needed. Full design: see [`MASTER_PLAN.md`](MASTER_PLAN.md).
+Turn any video into another language in minutes. Upload → pick language → get a dubbed video with
+natural AI voices (and optional lip-sync). A web SaaS you sell by subscription / per-minute.
 
-## 📂 Structure
-```
-00_script/      story.md, script-ready shot_list.csv   ← the storyboard (brain)
-01_character/   train_lora.yaml + dataset/             ← your reusable character (LoRA)
-pipeline/       config.py + make_*.py + dashboard.py   ← the engine + control panel
-02_keyframes/ 03_clips_raw/ 04_lipsync/ 05_audio/ 06_upscaled/ 07_final/
-```
+## 📂 Docs
+- [`BUSINESS_PLAN.md`](BUSINESS_PLAN.md) — market, model, pricing, margins, sales plan
+- [`TECH_PLAN.md`](TECH_PLAN.md) — architecture, stack, MVP build phases, costs
 
-## 🚀 Quick start (on the pod)
-```bash
-cd /workspace && git clone <this-repo> ai-project && cd ai-project
-bash setup.sh
-huggingface-cli login          # free, accept FLUX.1-dev license once
-```
-Then either run stages, or open the dashboard:
-```bash
-python pipeline/dashboard.py            # 🎛️ one-screen studio (web link)
-# or one command per stage:
-python pipeline/make_images.py          # 1) keyframes
-python pipeline/make_videos.py          # 2) animate (JUDGE VIDEO QUALITY HERE)
-python pipeline/make_voice.py           # 3) dialogue in your voice
-python pipeline/make_lipsync.py         # 4) lip sync (talking shots)
-python pipeline/make_music.py           # 5) music
-python pipeline/make_sfx.py             # 6) sound effects (foley)
-python pipeline/assemble.py             # 7) quick rough cut -> 07_final/rough_cut.mp4
-# then finish in DaVinci -> see 07_final/EDIT_GUIDE.md
-```
+## ⚡ The model in one line
+Use **ElevenLabs Dubbing API** on the backend, wrap it in a clean web app, **mark up the
+per-minute cost**, sell subscriptions. Low startup cost, fast to launch, healthy margin.
 
-## 🧠 How it works (organized, not scattered)
-- `shot_list.csv` = the brain. One row per shot.
-- `config.py` = all settings in one place (character, style, models).
-- Each script reads the CSV → makes every shot → saves named + sorted (`shot_01`, `shot_02`...).
-- Same character every shot (fixed seed / your LoRA) = consistency.
+## 💰 Why it works
+- Your cost (ElevenLabs): **~$0.24–0.60 / minute**
+- You sell at: **~$1.50–3.00 / minute** (or subscription plans)
+- **Margin: 60–85%**
 
-## 🔁 Reusable assets (build once, reuse forever)
-- 🧬 Character LoRA (`01_character/`) — your face/character
-- 🎙️ Voice (F5-TTS reference)
-- ⚙️ Pipeline + dashboard
+## 🎯 First market
+Creators + businesses who need regional reach — YouTubers, course/e-learning creators, marketers,
+agencies. Strong angle: **English ⇄ Bangla / Hindi / Urdu** for the South Asia market you know.
 
-## ⬆️ Upgrading video later (only if free quality is poor)
-In `config.py` change `VIDEO_ENGINE = "wan"` → `"kling"`/`"veo"`, add an API key, done.
-Everything else stays the same.
-
-## ♻️ If the pod is wiped
-`git clone` this repo on a new pod → `bash setup.sh` → re-download models → continue.
-(Big files — models, LoRA, clips — are NOT in git; re-download / back up to HuggingFace or Drive.)
-
-## ⚠️ Honest note
-Free **Wan** video is good but not Veo/Sora-level. Test it first (that's the plan). The biggest
-realism wins: Character LoRA + low guidance + film grain in DaVinci.
+## 🚦 Status
+Planning. MVP = upload → dub (1 language) → pay → download. See `TECH_PLAN.md` for build phases.
