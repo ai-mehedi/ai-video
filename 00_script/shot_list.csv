@@ -1,11 +1,19 @@
 shot_id,scene,shot_scale,camera_move,location,time_lighting,character_action,wardrobe,dialogue,duration_sec,emotion,sfx,music,status
-01,intro,wide,slow push-in,city rooftop,night / neon glow,hero stands at the edge looking over city,black coat,,5,calm-tense,wind + distant city,intro theme,todo
-02,intro,close-up,static,city rooftop,night / neon glow,hero turns head slowly to camera,black coat,"It ends tonight.",4,determined,wind,intro theme,todo
-03,intro,medium,slow pan left,city rooftop,night / neon glow,hero pulls collar up walks forward,black coat,,4,cold,footsteps + cloth,intro theme,todo
-04,chase,wide,handheld follow,back alley,night / rain,hero runs through rain,black coat wet,,5,urgent,rain + running steps,tension,todo
-05,chase,close-up,static,back alley,night / rain,hero breathing hard sweat and rain on face,black coat wet,,4,exhausted,heavy breathing + rain,tension,todo
-06,confront,medium,slow push-in,warehouse interior,dim warm light,hero faces the villain,black coat,"You shouldn't have come.",5,threatening,low ambience hum,low drone,todo
-07,confront,extreme close-up,static,warehouse interior,dim warm light,hero's eyes narrow,black coat,,3,intense,silence + heartbeat,low drone,todo
-08,climax,wide,quick push-in,warehouse interior,dim warm light + sparks,hero strikes,black coat,,4,explosive,impact + sparks,climax hit,todo
-09,ending,medium,slow pull-out,city rooftop,dawn / soft orange,hero stands alone as sun rises,black coat,,6,relief,gentle wind + birds,outro theme,todo
-10,ending,close-up,static,city rooftop,dawn / soft orange,hero faint smile looks to horizon,black coat,"Not today.",4,peaceful,gentle wind,outro theme,todo
+01,s1_apartment,wide,slow push-in,modern apartment living room,night / cold blue light,ayan sits on floor opening a cardboard box of belongings,grey sweater,,6,lonely,quiet room tone + box rustle,sad piano,todo
+02,s1_apartment,close-up,static,modern apartment living room,night / cold blue light,ayan pulls a yellowed sealed envelope from the box,grey sweater,,5,curious-sad,paper handling,sad piano,todo
+03,s1_apartment,close-up,static,modern apartment living room,night / cold blue light,ayan looks at the envelope with his name in fathers handwriting,grey sweater,"You never said you wrote me anything.",5,aching,quiet room tone,sad piano,todo
+04,s1_apartment,medium,slow push-in,modern apartment living room,night / cold blue light,ayan holds an old photo of him and his father,grey sweater,"I was always too busy, Baba. Always next week.",6,regret,quiet room tone,sad piano,todo
+05,s2_home,wide,slow pan right,empty old family home dusty,day / warm golden sunbeams,ayan walks slowly through the empty house touching the wall,grey sweater,,6,nostalgic,wooden floor creak + birds outside,nostalgic strings,todo
+06,s2_home,close-up,static,empty old family home,day / warm golden sunbeams,ayans hand touches fathers reading glasses on a table,grey sweater,,5,tender,soft ambience,nostalgic strings,todo
+07,s2_home,medium,slow push-in,empty old family home armchair,day / warm golden sunbeams,ayan looks at the empty worn armchair,grey sweater,"It still smells like you in here.",5,wistful,soft ambience,nostalgic strings,todo
+08,s2_home,close-up,static,empty old family home armchair,day / warm golden sunbeams,ayan sits in the armchair and closes his eyes,grey sweater,"I'm sorry I stopped coming.",6,grief,soft ambience,nostalgic strings,todo
+09,s3_park,wide,static,quiet park bench under a tree,golden hour / warm low sun,ayan sits alone on the bench,grey sweater + coat,,6,reflective,gentle wind + distant birds,emotional piano cello,todo
+10,s3_park,close-up,static,park bench,golden hour / warm low sun,ayans trembling hands open the letter,grey sweater + coat,,5,nervous,paper unfolding,emotional piano cello,todo
+11,s3_park,extreme close-up,slow push-in,park bench,golden hour / warm low sun,ayans eyes fill with tears one tear falls,grey sweater + coat,,5,breaking,silence + soft wind,emotional piano cello,todo
+12,s3_park,medium,static,park bench,golden hour / warm low sun,ayan reads listening to fathers words,grey sweater + coat,"My son. If you are reading this, I am already gone.",7,overwhelmed,soft wind,emotional piano cello,todo
+13,s3_park,close-up,static,park bench,golden hour / warm low sun,ayan a faint sad smile through tears,grey sweater + coat,"I was never angry that you were busy. I was proud.",7,bittersweet,soft wind,emotional piano cello,todo
+14,s4_cemetery,wide,slow pull-out,cemetery grave with mist,dawn / soft pink orange light,ayan stands alone at fathers grave holding the letter,grey sweater + coat,,6,calm-grief,morning mist + faint birds,hopeful orchestral,todo
+15,s4_cemetery,close-up,static,cemetery grave,dawn / soft pink orange light,ayan looks down at the grave peaceful,grey sweater + coat,"I will, Baba. Every Sunday. I promise.",6,peaceful,gentle wind,hopeful orchestral,todo
+16,s4_cemetery,close-up,static,cemetery grave,dawn / soft pink orange light,ayans hand places a single flower on the grave,grey sweater + coat,,5,closure,gentle wind,hopeful orchestral,todo
+17,s4_cemetery,wide,slow push-in,cemetery path sunrise,dawn / full warm sunrise,ayan walks away lighter as the sun rises,grey sweater + coat,,6,relief,birdsong + footsteps,hopeful orchestral,todo
+18,s4_cemetery,wide,static,empty park bench from scene 3,dawn / warm light,empty bench a single bird lands on it,,,6,peaceful,single bird chirp + wind,hopeful orchestral fade,todo
