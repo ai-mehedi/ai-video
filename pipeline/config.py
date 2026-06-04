@@ -11,9 +11,12 @@ SHOT_LIST = "00_script/shot_list.csv"      # the storyboard = the brain of the f
 # TESTING: a generated character (no LoRA needed).
 # REAL FILM: train your LoRA, then put your trigger word here (e.g. "myhero").
 CHARACTER = (
-    "a 60 year old Bangladeshi rickshaw puller, thin face, weathered dark skin, "
-    "short grey beard, kind tired eyes, deep wrinkles"
+    "an 18 year old Bangladeshi man, soft round face, light brown clear skin, "
+    "neat short black hair, clean-shaven, nervous dark eyes, slim build, "
+    "wearing a crisp white shirt and a dark tie"
 )
+# (rickshaw film character, swap in when making that one:)
+# CHARACTER = "a 60 year old Bangladeshi rickshaw puller, thin face, weathered dark skin, short grey beard, kind tired eyes, deep wrinkles"
 
 # Your trained Character LoRA (the reusable "model"). Empty = off (testing mode).
 CHARACTER_LORA = ""        # later: "/workspace/ai-project/01_character/output/myhero.safetensors"
@@ -53,6 +56,16 @@ VOICE_REF_TEXT  = "the exact words spoken in my reference sample"
 
 # ---------------------------------------------------------------- MUSIC (MusicGen)
 MUSIC_MODEL = "facebook/musicgen-large"
+
+# ---------------------------------------------------------------- STORYBOARD IMAGES (fal.ai)
+# Cheap start/end frame images for Google Flow. ~$0.025/image with FLUX Dev.
+# Get a free key at fal.ai → set it:  export FAL_KEY="your-key"
+STORYBOARD_CSV  = "00_script/storyboard_frames.csv"
+STORYBOARD_DIR  = "02_keyframes"            # frames saved here: shot_01_start.png / shot_01_end.png
+FAL_MODEL       = "fal-ai/flux/dev"         # realistic + cheap. (schnell = "fal-ai/flux/schnell" cheaper)
+FAL_IMAGE_SIZE  = "landscape_16_9"          # widescreen frames
+FAL_STEPS       = 28
+FAL_GUIDANCE    = 3.5
 
 # ---------------------------------------------------------------- FOLDERS (auto)
 KEYFRAME_DIR = "02_keyframes"
