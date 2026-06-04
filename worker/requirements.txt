@@ -1,0 +1,8 @@
+# DubStudio worker dependencies
+runpod>=1.6            # serverless handler
+requests>=2.31         # ElevenLabs REST calls
+pydub>=0.25            # audio cut/overlay/mix
+demucs>=4.0            # vocal / background separation (GPU)
+deep-translator>=1.11  # translation (free Google; swap for DeepL/GPT later)
+torch                  # demucs backend (use the CUDA build in the Docker image)
+# ffmpeg must be installed at OS level (see Dockerfile)
