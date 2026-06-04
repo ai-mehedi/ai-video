@@ -211,7 +211,7 @@ on new job:
 
 Ship this first, nothing more:
 1. Own auth (signup/login/JWT)
-2. Upload video (S3 presigned)
+2. Upload video (S3 presigned) — **hard 5-min cap, validate duration before queuing**
 3. Worker: extract → Demucs → Scribe → translate → IVC clone → TTS → align → mix → remux (1 language)
 4. Dashboard: job status + download result
 5. Stripe: free trial (3 min, watermark) + 1 paid plan
@@ -256,7 +256,72 @@ Ship this first, nothing more:
 
 ---
 
-# 15. 90-DAY ROADMAP
+# 15. SCALING, CONCURRENCY & VIDEO LENGTH LIMITS
+
+The #1 risk for a video SaaS: heavy jobs + many users at once. Solved with **length caps + a job
+queue + autoscaling workers**. Never let the web server do the heavy work.
+
+## 15.1 Video length limits (hard caps — protect the app)
+A 1-hour video = 60× the cost/time of a 1-min clip → can crash a worker (memory), block the queue,
+and run up huge API bills. So cap length per plan:
+
+| Plan | Max video length | Notes |
+|---|---|---|
+| Free trial | **2 min** | enough to test |
+| Starter | **5 min** | shorts, ads, clips |
+| Pro | **15 min** | lessons, longer content |
+| Business | **30–60 min** | via chunking (15.5) |
+
+> **MVP = hard 5-min cap.** Reject longer uploads with: *"Max 5 minutes — please split your video."*
+> Validate duration on upload (ffprobe) BEFORE queuing.
+
+## 15.2 Why heavy jobs don't crash the server
+The web/API server **only accepts the upload and queues a job** (~0.1s) → it can serve thousands of
+concurrent users. All heavy work (Demucs, Scribe, TTS, mix) happens in **background workers**, not
+on the API server. Users get an async **"we'll notify you when ready"** (like HeyGen/Descript).
+
+```
+Users ──▶ API server (light, queues job) ──▶ Redis QUEUE ──▶ Worker pool (GPU, autoscale 1→N)
+                                                                   │ Demucs→Scribe→clone→TTS→mix
+                                                                   ▼
+                                                      Result → S3 → notify user 🎬
+```
+
+## 15.3 Autoscaling workers (RunPod Serverless or cloud autoscale)
+- **Queue empty** → 0 workers → **$0 cost** (scale to zero)
+- **Queue grows** → spin up more GPU workers (e.g. 1 per ~5 waiting jobs, up to a max)
+- **Queue clears** → scale back down
+- You **pay only while processing** → spiky demand handled cheaply
+
+## 15.4 Per-user concurrency + priority (so no one hogs)
+| Plan | Jobs at once | Queue priority |
+|---|---|---|
+| Free | 1 | lowest |
+| Starter | 2 | normal |
+| Pro | 3 | high |
+| Business | 10 | highest |
+
+Paid jobs jump the line (priority queue). One user can't flood the system.
+
+## 15.5 Long videos LATER — chunking (no giant jobs ever)
+To support 30–60 min on higher tiers without killing the app, **split, don't lengthen**:
+```
+1-hour video → split into 12 × 5-min chunks → 12 workers process IN PARALLEL → stitch back
+```
+Each chunk is a small, safe job. With enough workers, a 1-hour video finishes about as fast as a
+5-min one. Add this as a Business feature after MVP.
+
+## 15.6 Other protections
+- **Validate duration on upload** (ffprobe) — reject over-limit before queuing.
+- **DB connection pooling** (PgBouncer) so the database doesn't choke.
+- **Rate limiting** on API + auth endpoints.
+- **Idempotent jobs + retries**; **dead-letter queue** for failures (don't silently lose jobs).
+- **Auto-delete** media after N days (storage + privacy).
+- **ElevenLabs rate limits:** queue API calls; request higher limits as you grow.
+
+---
+
+# 16. 90-DAY ROADMAP
 
 - **Wk 1–4:** build MVP (auth → upload → dub pipeline → pay → download)
 - **Wk 5–6:** beta 10 creators (free) → testimonials + fixes
@@ -270,3 +335,7 @@ Own pipeline = **Demucs (keep BGM/SFX) + Scribe (transcribe) + Instant Voice Clo
 voice) + Multilingual TTS (new language) + align + mix + remux.** Cost **~$0.10/min**, sell
 **$1–2.50/min**, **90%+ margin**. Stack: own auth + Postgres + S3 + Stripe + ElevenLabs. Ship a
 1-language MVP in ~3–4 weeks, then add lip-sync and scale.
+
+**Scale safely:** hard **5-min cap** at MVP, **queue + autoscaling GPU workers** (scale to zero when
+idle), per-user concurrency limits, and **chunking** for long videos later. The web server only
+queues jobs — heavy work runs in background workers, so many users never crash it.
