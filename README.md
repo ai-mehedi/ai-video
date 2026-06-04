@@ -25,7 +25,11 @@ python pipeline/dashboard.py            # 🎛️ one-screen studio (web link)
 python pipeline/make_images.py          # 1) keyframes
 python pipeline/make_videos.py          # 2) animate (JUDGE VIDEO QUALITY HERE)
 python pipeline/make_voice.py           # 3) dialogue in your voice
-python pipeline/make_music.py           # 4) music
+python pipeline/make_lipsync.py         # 4) lip sync (talking shots)
+python pipeline/make_music.py           # 5) music
+python pipeline/make_sfx.py             # 6) sound effects (foley)
+python pipeline/assemble.py             # 7) quick rough cut -> 07_final/rough_cut.mp4
+# then finish in DaVinci -> see 07_final/EDIT_GUIDE.md
 ```
 
 ## 🧠 How it works (organized, not scattered)
