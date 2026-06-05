@@ -14,6 +14,19 @@ pip install --upgrade pip
 pip install gradio gdown opencv-python realesrgan basicsr facexlib gfpgan \
             python-dotenv openai scenedetect
 
+# Newer torchvision moved functional_tensor; basicsr/CodeFormer still import the
+# old path. Patch every basicsr copy. MUST run before any basicsr import below.
+patch_basicsr () {
+  echo "  (patching basicsr torchvision import)"
+  for d in $(python -c "import basicsr,os;print(os.path.dirname(basicsr.__file__))" 2>/dev/null) ~/CodeFormer/basicsr; do
+    if [ -d "$d" ]; then
+      grep -rl 'torchvision.transforms.functional_tensor' "$d" 2>/dev/null \
+        | xargs -r sed -i 's/torchvision.transforms.functional_tensor/torchvision.transforms.functional/g'
+    fi
+  done
+}
+patch_basicsr
+
 cd ~
 
 echo "== Real-ESRGAN (fast full-frame super-resolution) =="
@@ -32,7 +45,8 @@ fi
 cd ~/CodeFormer
 pip install -r requirements.txt
 python basicsr/setup.py develop
-# weights
+patch_basicsr                      # re-patch: pip/CodeFormer may have reinstalled basicsr
+# weights (these import basicsr — must come AFTER the patch)
 python scripts/download_pretrained_models.py facelib
 python scripts/download_pretrained_models.py CodeFormer
 cd ~
@@ -60,13 +74,7 @@ cd ~
 # downloaded on first run by DiffSynth, or pre-fetch them with download_models.py.
 # Pick a cartoon checkpoint (e.g. from Civitai) and place it where the config points.
 
-echo "== patch basicsr / torchvision compatibility =="
-# Newer torchvision moved functional_tensor; basicsr/CodeFormer still import the old path.
-for d in $(python -c "import basicsr,os;print(os.path.dirname(basicsr.__file__))") ~/CodeFormer/basicsr; do
-  if [ -d "$d" ]; then
-    grep -rl 'torchvision.transforms.functional_tensor' "$d" 2>/dev/null \
-      | xargs -r sed -i 's/torchvision.transforms.functional_tensor/torchvision.transforms.functional/g'
-  fi
-done
+echo "== final basicsr patch (in case DiffSynth pulled a new copy) =="
+patch_basicsr
 
 echo "== done. Launch the app with:  python app.py =="
