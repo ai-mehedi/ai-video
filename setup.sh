@@ -15,7 +15,16 @@ pip install gradio gdown opencv-python realesrgan basicsr facexlib gfpgan
 
 cd ~
 
-echo "== CodeFormer (super-resolution + face restoration) =="
+echo "== Real-ESRGAN (fast full-frame super-resolution) =="
+if [ ! -d ~/Real-ESRGAN ]; then
+  git clone https://github.com/xinntao/Real-ESRGAN.git
+fi
+cd ~/Real-ESRGAN
+pip install -r requirements.txt || true
+python setup.py develop
+cd ~
+
+echo "== CodeFormer (face restoration) =="
 if [ ! -d ~/CodeFormer ]; then
   git clone https://github.com/sczhou/CodeFormer.git
 fi

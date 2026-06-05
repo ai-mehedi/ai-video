@@ -22,12 +22,18 @@ OUT_DIR = os.path.join(HERE, "outputs")
 os.makedirs(OUT_DIR, exist_ok=True)
 
 
-def restore_video(video_path, target_height, fps_mode, upscale, face_fidelity,
-                  denoise, deinterlace, grade_strength):
+def restore_video(video_path, server_path, target_height, fps_mode, upscale,
+                  face_fidelity, denoise, deinterlace, grade_strength):
     """Generator: streams the pipeline log, then yields the finished video."""
-    if not video_path:
-        yield "Please upload a video first.", None
+    # Prefer a file already on the pod — avoids slow/flaky browser upload of big files.
+    src = (server_path or "").strip() or video_path
+    if not src:
+        yield "Upload a video, or paste the path to a video already on the pod.", None
         return
+    if not os.path.isfile(src):
+        yield f"File not found on the pod: {src}", None
+        return
+    video_path = src
 
     stamp = str(int(time.time()))
     out_path = os.path.join(OUT_DIR, f"restored_{stamp}.mp4")
@@ -72,7 +78,11 @@ with gr.Blocks(title="AI Video Restoration") as demo:
     )
     with gr.Row():
         with gr.Column():
-            inp = gr.Video(label="Source video")
+            inp = gr.Video(label="Source video (small files only — upload here)")
+            server_path = gr.Textbox(
+                label="…or path to a video already on the pod (best for big files)",
+                placeholder="/workspace/myvideo.mp4",
+            )
             target_height = gr.Dropdown([720, 1080, 1440, 2160], value=1080, label="Output height")
             fps_mode = gr.Radio(["Smooth 60fps", "Keep source fps"], value="Smooth 60fps",
                                 label="Motion")
@@ -91,7 +101,7 @@ with gr.Blocks(title="AI Video Restoration") as demo:
 
     go.click(
         restore_video,
-        inputs=[inp, target_height, fps_mode, upscale, face_fidelity,
+        inputs=[inp, server_path, target_height, fps_mode, upscale, face_fidelity,
                 denoise, deinterlace, grade_strength],
         outputs=[logbox, out_video],
     )

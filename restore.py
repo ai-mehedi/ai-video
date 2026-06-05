@@ -4,10 +4,16 @@ AI video restoration pipeline.
 
 Stages:
   1. Preprocess  (FFmpeg: optional deinterlace + denoise, extract frames + audio)
-  2. Restore     (CodeFormer + Real-ESRGAN: super-resolution + face restoration)
-  3. Assemble    (FFmpeg: restored frames -> intermediate video at source fps)
-  4. Interpolate (RIFE -> 60fps; falls back to FFmpeg minterpolate if RIFE missing)
-  5. Grade+Encode(FFmpeg: cinematic "HDR look" + scale to target height + mux audio)
+  2. Upscale     (Real-ESRGAN, fp16: fast full-frame super-resolution)
+  3. Faces       (CodeFormer, faces-only pass on the upscaled frames; optional)
+  4. Assemble    (FFmpeg: restored frames -> intermediate video at source fps)
+  5. Interpolate (RIFE -> 60fps; falls back to FFmpeg minterpolate if RIFE missing)
+  6. Grade+Encode(FFmpeg: cinematic "HDR look" + scale to target height + mux audio)
+
+Speed note: upscale (Real-ESRGAN) and face restoration (CodeFormer) are kept as
+two separate passes on purpose. Running CodeFormer's all-in-one mode (its own
+Real-ESRGAN background upsampler + face_upsample) on every frame is many times
+slower. fp16 is on by default (use --fp32 to disable).
 
 Designed to run on a RunPod pod with a 48 GB GPU. Prints progress markers
 (STAGE x/5 ...) so the Gradio app can stream them to the browser.
@@ -26,6 +32,7 @@ import sys
 import time
 
 # Repo locations created by setup.sh (override with env vars if you cloned elsewhere)
+REALESRGAN_DIR = os.environ.get("REALESRGAN_DIR", os.path.expanduser("~/Real-ESRGAN"))
 CODEFORMER_DIR = os.environ.get("CODEFORMER_DIR", os.path.expanduser("~/CodeFormer"))
 RIFE_DIR = os.environ.get("RIFE_DIR", os.path.expanduser("~/Practical-RIFE"))
 
@@ -110,33 +117,62 @@ def stage_preprocess(args, work):
 
 
 # ----------------------------------------------------------------------------
-# Stage 2: AI restore (CodeFormer w/ Real-ESRGAN background upsampler)
+# Stage 2: full-frame super-resolution (Real-ESRGAN, fp16 — fast)
 # ----------------------------------------------------------------------------
-def stage_restore(args, work, frames_in):
-    log("STAGE 2/5  AI restore (super-resolution + face restoration)")
+def stage_upscale(args, work, frames_in):
+    log("STAGE 2/6  AI upscale (Real-ESRGAN)")
+    esr_out = os.path.join(work, "esr_out")
+    os.makedirs(esr_out, exist_ok=True)
+
+    cmd = [
+        sys.executable, os.path.join(REALESRGAN_DIR, "inference_realesrgan.py"),
+        "-i", frames_in, "-o", esr_out,
+        "-n", args.sr_model, "-s", str(args.upscale),
+        "-t", str(args.tile), "--suffix", "out",
+    ]
+    if args.sr_model == "realesr-general-x4v3":
+        cmd += ["-dn", str(args.sr_denoise)]   # tunable denoise on the general model
+    if args.fp32:
+        cmd += ["--fp32"]                       # default is fp16 (faster)
+    run(cmd, cwd=REALESRGAN_DIR)
+
+    n = len(glob.glob(os.path.join(esr_out, "*.png")))
+    if n == 0:
+        raise RuntimeError(f"Real-ESRGAN produced no frames in {esr_out}")
+    log(f"  upscaled {n} frames -> {esr_out}")
+    return esr_out
+
+
+# ----------------------------------------------------------------------------
+# Stage 3: face restoration (CodeFormer, faces-only — the slow part removed)
+# ----------------------------------------------------------------------------
+def stage_faces(args, work, frames_dir):
+    if args.no_faces:
+        log("STAGE 3/6  Face restoration skipped (--no-faces)")
+        return frames_dir
+
+    log("STAGE 3/6  Face restoration (CodeFormer, faces only)")
     cf_out = os.path.join(work, "cf_out")
     os.makedirs(cf_out, exist_ok=True)
 
+    # No --bg_upsampler and --upscale 1: frames are already upscaled, so CodeFormer
+    # only detects + rebuilds faces and pastes them back. This is what makes it fast.
     cmd = [
         sys.executable, os.path.join(CODEFORMER_DIR, "inference_codeformer.py"),
-        "-i", frames_in,
-        "-o", cf_out,
+        "-i", frames_dir, "-o", cf_out,
         "-w", str(args.face_fidelity),     # 0 = max restoration, 1 = max fidelity to source
-        "--upscale", str(args.upscale),
-        "--bg_upsampler", "realesrgan",    # upscales the whole frame, not just faces
-        "--face_upsample",
+        "--upscale", "1",
     ]
     run(cmd, cwd=CODEFORMER_DIR)
 
     # CodeFormer writes full restored frames to <out>/final_results/
     restored = os.path.join(cf_out, "final_results")
     if not glob.glob(os.path.join(restored, "*.png")):
-        # fall back: search anywhere under cf_out for the frame set
         cands = glob.glob(os.path.join(cf_out, "**", "*.png"), recursive=True)
         if not cands:
             raise RuntimeError(f"CodeFormer produced no frames in {cf_out}")
         restored = os.path.dirname(cands[0])
-    log(f"  restored frames in {restored}")
+    log(f"  faces restored -> {restored}")
     return restored
 
 
@@ -144,7 +180,7 @@ def stage_restore(args, work, frames_in):
 # Stage 3: assemble restored frames into an intermediate video
 # ----------------------------------------------------------------------------
 def stage_assemble(args, work, restored_dir, src_fps):
-    log("STAGE 3/5  Assemble restored frames")
+    log("STAGE 4/6  Assemble restored frames")
     sr_video = os.path.join(work, "sr.mp4")
     run([
         "ffmpeg", "-y", "-framerate", f"{src_fps}",
@@ -160,10 +196,10 @@ def stage_assemble(args, work, restored_dir, src_fps):
 # ----------------------------------------------------------------------------
 def stage_interpolate(args, work, sr_video, src_fps):
     if args.fps <= 0:
-        log("STAGE 4/5  Interpolation skipped (keeping source fps)")
+        log("STAGE 5/6  Interpolation skipped (keeping source fps)")
         return sr_video, src_fps
 
-    log(f"STAGE 4/5  Interpolate to {args.fps} fps")
+    log(f"STAGE 5/6  Interpolate to {args.fps} fps")
     rife_script = os.path.join(RIFE_DIR, "inference_video.py")
     rife_model = os.path.join(RIFE_DIR, "train_log")
 
@@ -216,7 +252,7 @@ def build_grade_vf(strength, target_height):
 
 
 def stage_grade_encode(args, work, video, audio_path):
-    log("STAGE 5/5  Cinematic grade + final encode")
+    log("STAGE 6/6  Cinematic grade + final encode")
     vf = build_grade_vf(args.grade_strength, args.target_height)
 
     cmd = ["ffmpeg", "-y", "-i", video]
@@ -240,6 +276,13 @@ def main():
     ap.add_argument("--target-height", type=int, default=1080)
     ap.add_argument("--fps", type=int, default=60, help="target fps (0 = keep source)")
     ap.add_argument("--upscale", type=int, default=2, help="AI upscale factor (use 4 for very low-res sources)")
+    ap.add_argument("--sr-model", default="realesr-general-x4v3",
+                    help="Real-ESRGAN model (realesr-general-x4v3 = fast real footage; RealESRGAN_x4plus = sharper/slower)")
+    ap.add_argument("--sr-denoise", type=float, default=0.5,
+                    help="denoise strength for realesr-general model (0..1)")
+    ap.add_argument("--tile", type=int, default=0, help="Real-ESRGAN tile size (0=off; set ~512 only if GPU OOM)")
+    ap.add_argument("--fp32", action="store_true", help="disable fp16 (slower, more memory)")
+    ap.add_argument("--no-faces", action="store_true", help="skip CodeFormer face restoration")
     ap.add_argument("--face-fidelity", type=float, default=0.7,
                     help="CodeFormer -w: 0=max restore, 1=stay faithful to source")
     ap.add_argument("--denoise", type=float, default=0.4, help="0=off .. 1=strong")
@@ -261,7 +304,8 @@ def main():
     log(f"Source fps: {src_fps:.3f}")
 
     frames_in, audio = stage_preprocess(args, work)
-    restored = stage_restore(args, work, frames_in)
+    upscaled = stage_upscale(args, work, frames_in)
+    restored = stage_faces(args, work, upscaled)
     sr_video = stage_assemble(args, work, restored, src_fps)
     interp_video, _ = stage_interpolate(args, work, sr_video, src_fps)
     stage_grade_encode(args, work, interp_video, audio)
