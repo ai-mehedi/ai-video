@@ -11,7 +11,8 @@ apt-get install -y ffmpeg git wget aria2
 echo "== python packages =="
 pip install --upgrade pip
 # torch/torchvision usually preinstalled on RunPod PyTorch templates.
-pip install gradio gdown opencv-python realesrgan basicsr facexlib gfpgan
+pip install gradio gdown opencv-python realesrgan basicsr facexlib gfpgan \
+            python-dotenv openai scenedetect
 
 cd ~
 
@@ -47,6 +48,17 @@ pip install -r requirements.txt || true
 #   gdown <FILE_ID> -O model.zip && unzip model.zip -d train_log
 # If train_log/*.pkl is missing, the pipeline auto-falls back to FFmpeg minterpolate.
 cd ~
+
+echo "== DiffSynth-Studio (Diffutoon cartoon stylization) =="
+if [ ! -d ~/DiffSynth-Studio ]; then
+  git clone https://github.com/modelscope/DiffSynth-Studio.git
+fi
+cd ~/DiffSynth-Studio
+pip install -e .
+cd ~
+# Diffutoon models (SD1.5 cartoon checkpoint + AnimateDiff + ControlNets) are
+# downloaded on first run by DiffSynth, or pre-fetch them with download_models.py.
+# Pick a cartoon checkpoint (e.g. from Civitai) and place it where the config points.
 
 echo "== patch basicsr / torchvision compatibility =="
 # Newer torchvision moved functional_tensor; basicsr/CodeFormer still import the old path.

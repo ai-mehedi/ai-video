@@ -4,6 +4,9 @@
 # and these are re-downloadable or stored elsewhere (see README).
 # ============================================================
 
+# Secrets — NEVER commit the real .env
+.env
+
 # OS junk
 .DS_Store
 Thumbs.db
